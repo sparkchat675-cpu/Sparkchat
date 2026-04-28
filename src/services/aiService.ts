@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 const USER_API_KEY = "AIzaSyC7J0goUOxAq6jmhfm8I6orufTOEXMrhI8";
 
 // Standard way to access keys in this environment
-const GEMINI_API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function generateBotResponse(
   userText: string, 
@@ -19,6 +19,7 @@ export async function generateBotResponse(
       throw new Error("No Gemini API key available. Please check your environment variables.");
     }
 
+    // React/Vite pattern as per skill
     const ai = new GoogleGenAI({ apiKey });
 
     const systemInstruction = `
