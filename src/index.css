@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  
+  --color-pink-primary: #ff4d8d;
+  --color-pink-secondary: #ff99cc;
+  --color-pink-dark: #e63977;
+  --color-bg-soft: #fff5f8;
+  --color-text-main: #4a1d2c;
+  
+  --background-gradient: linear-gradient(135deg, #ff4d8d, #ff99cc);
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-bg-soft text-text-main selection:bg-pink-primary/20;
+  }
+}
+
+@utility pink-gradient {
+  background: var(--background-gradient);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.chat-bubble-user {
+  @apply pink-gradient text-white shadow-lg;
+  border-radius: 18px 18px 2px 18px;
+  box-shadow: 0 4px 12px rgba(255, 77, 141, 0.2);
+}
+
+.chat-bubble-partner {
+  @apply bg-white text-text-main shadow-sm;
+  border-radius: 2px 18px 18px 18px;
+  box-shadow: 0 4px 12px rgba(255, 77, 141, 0.08);
+}
+
+/* Custom scrollbar for chat */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-pink-200 rounded-full;
+}
