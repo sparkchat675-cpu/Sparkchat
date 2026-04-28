@@ -11,6 +11,8 @@ interface AppUser {
   age: number;
   country: string;
   avatar_url: string | null;
+  bio?: string;
+  interests?: string[];
   is_online: boolean;
   is_google_user: boolean;
 }
@@ -74,16 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 2. Listen to Firebase Auth state changes
     const unsubscribeFirebase = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // User logged in via Firebase
-        localStorage.removeItem('temp_user'); // Clean up temp user if any
+        localStorage.removeItem('temp_user');
         await syncSupabaseProfile(firebaseUser.uid, firebaseUser);
       } else {
-        // User logged out from Firebase
-        // Only clear user if it's not a temp user
         const isTemp = !!localStorage.getItem('temp_user');
-        if (!isTemp) {
-          setUser(null);
-        }
+        if (!isTemp) setUser(null);
       }
       setLoading(false);
     });
@@ -92,6 +89,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsubscribeFirebase();
     };
   }, []);
+
+  useEffect(() => {
+    // 3. Presence tracking
+    const updatePresence = async (online: boolean) => {
+      if (user?.id) {
+        await supabase.from('users').update({ is_online: online }).eq('id', user.id);
+      }
+    };
+
+    if (user) {
+      updatePresence(true);
+      
+      const handleVisibilityChange = () => {
+        updatePresence(document.visibilityState === 'visible');
+      };
+
+      const handleBeforeUnload = () => {
+        updatePresence(false);
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        updatePresence(false);
+      };
+    }
+  }, [user?.id]);
 
   const loginTemporary = async (data: Omit<AppUser, 'id' | 'is_google_user' | 'avatar_url' | 'is_online'>) => {
     const tempId = crypto.randomUUID();

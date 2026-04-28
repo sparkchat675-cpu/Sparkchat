@@ -14,6 +14,8 @@ CREATE TABLE users (
   age INTEGER CHECK (age >= 18),
   country TEXT,
   avatar_url TEXT,
+  bio TEXT,
+  interests TEXT[], -- Array of interests
   is_online BOOLEAN DEFAULT false,
   status TEXT DEFAULT 'online', -- online, searching, chatting
   current_partner_id TEXT, 

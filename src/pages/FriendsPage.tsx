@@ -1,34 +1,113 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Heart, Search, MessageCircle, MoreHorizontal, UserCheck, Clock } from 'lucide-react';
+import { Heart, Search, MessageCircle, MoreHorizontal, UserCheck, Clock, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
 
 type Friend = {
   id: string;
+  friendshipId: string;
   name: string;
   status: 'pending' | 'accepted';
   avatar_url: string;
   lastMessage?: string;
   isOnline: boolean;
+  isIncoming?: boolean;
 };
 
 export default function FriendsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.is_google_user) {
-      // Fetch from Supabase
-      // Mock for now
-      setFriends([
-        { id: '1', name: 'Riya', status: 'accepted', avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Riya', lastMessage: 'Hey, how are you?', isOnline: true },
-        { id: '3', name: 'Sophie', status: 'pending', avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie', isOnline: false },
-      ]);
-    }
-    setLoading(false);
+    if (!user) return;
+
+    const fetchFriends = async () => {
+      setLoading(true);
+      try {
+        // Fetch friendships
+        const { data, error } = await supabase
+          .from('friendships')
+          .select(`
+            id,
+            status,
+            sender_id,
+            receiver_id,
+            users:sender_id (id, name, avatar_url, is_online),
+            receiver:receiver_id (id, name, avatar_url, is_online)
+          `)
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+        if (error) throw error;
+
+        const formattedFriends: Friend[] = data.map((f: any) => {
+          const isSender = f.sender_id === user.id;
+          const otherUser = isSender ? f.receiver : f.users;
+          return {
+            id: otherUser.id,
+            friendshipId: f.id,
+            name: otherUser.name,
+            status: f.status,
+            avatar_url: otherUser.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUser.name}`,
+            isOnline: otherUser.is_online,
+            isIncoming: !isSender && f.status === 'pending'
+          };
+        });
+
+        setFriends(formattedFriends);
+      } catch (err) {
+        console.error("Error fetching friends:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFriends();
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('friendships-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => {
+        fetchFriends();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
+
+  const handleAcceptRequest = async (friendshipId: string) => {
+    try {
+      const { error } = await supabase
+        .from('friendships')
+        .update({ status: 'accepted' })
+        .eq('id', friendshipId);
+      
+      if (error) throw error;
+      alert("Friend request accepted!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to accept request.");
+    }
+  };
+
+  const handleRejectRequest = async (friendshipId: string) => {
+    try {
+      const { error } = await supabase
+        .from('friendships')
+        .delete()
+        .eq('id', friendshipId);
+      
+      if (error) throw error;
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   if (!user?.is_google_user) {
     return (
@@ -74,6 +153,7 @@ export default function FriendsPage() {
               <motion.div
                 key={friend.id}
                 whileTap={{ backgroundColor: '#fff0f5' }}
+                onClick={() => friend.status === 'accepted' && navigate(`/dm/${friend.id}`)}
                 className="p-4 bg-white flex items-center gap-4 transition-colors cursor-pointer group"
               >
                 <div className="relative">
@@ -112,9 +192,26 @@ export default function FriendsPage() {
                     </div>
                   ) : (
                     <div className="flex gap-2">
-                       <button className="w-8 h-8 bg-pink-primary text-white rounded-lg flex items-center justify-center shadow-lg shadow-pink-100">
-                         <UserCheck size={16} />
-                       </button>
+                       {friend.isIncoming ? (
+                         <>
+                           <button 
+                             onClick={() => handleAcceptRequest(friend.friendshipId)}
+                             className="w-10 h-10 bg-pink-primary text-white rounded-lg flex items-center justify-center shadow-lg shadow-pink-100 hover:bg-pink-dark transition-all"
+                           >
+                             <UserCheck size={20} />
+                           </button>
+                           <button 
+                             onClick={() => handleRejectRequest(friend.friendshipId)}
+                             className="w-10 h-10 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center hover:bg-slate-200 transition-all"
+                           >
+                             <LogOut size={18} className="rotate-45" />
+                           </button>
+                         </>
+                       ) : (
+                         <div className="flex items-center gap-1 text-slate-300 text-[10px] font-bold uppercase">
+                           <span>Sent</span>
+                         </div>
+                       )}
                     </div>
                   )}
                 </div>

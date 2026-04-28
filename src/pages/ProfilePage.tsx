@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { LogOut, Settings, Shield, User as UserIcon, Camera, ChevronRight, Share2, Heart, Award } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -8,6 +8,39 @@ import { useNavigate } from 'react-router-dom';
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const [bio, setBio] = useState(user?.bio || '');
+  const [interests, setInterests] = useState<string[]>(user?.interests || []);
+  const [isEditing, setIsEditing] = useState(false);
+  const [newInterest, setNewInterest] = useState('');
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ bio, interests })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      alert("Profile updated!");
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update profile.");
+    }
+  };
+
+  const addInterest = () => {
+    if (newInterest.trim() && !interests.includes(newInterest.trim())) {
+      setInterests([...interests, newInterest.trim()]);
+      setNewInterest('');
+    }
+  };
+
+  const removeInterest = (interest: string) => {
+    setInterests(interests.filter(i => i !== interest));
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -93,8 +126,68 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Menu Options */}
       <div className="p-6 space-y-6">
+        {/* Bio Section */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between ml-2">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">About Me</h3>
+            <button 
+              onClick={() => isEditing ? handleSaveProfile() : setIsEditing(true)}
+              className="text-[10px] font-bold text-pink-primary uppercase"
+            >
+              {isEditing ? 'Save' : 'Edit'}
+            </button>
+          </div>
+          <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 min-h-[100px]">
+            {isEditing ? (
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell others about yourself..."
+                className="w-full h-24 bg-slate-50 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-pink-primary/30"
+              />
+            ) : (
+              <p className="text-sm text-slate-600 leading-relaxed italic">
+                {bio || "No bio yet. Click edit to add one!"}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Interests Section */}
+        <div className="space-y-3">
+          <h3 className="ml-2 text-xs font-bold text-slate-400 uppercase tracking-widest">Interests</h3>
+          <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
+            <div className="flex flex-wrap gap-2">
+              {interests.map((interest) => (
+                <div key={interest} className="px-3 py-1.5 bg-pink-light text-pink-primary rounded-full text-xs font-bold flex items-center gap-1">
+                  <span>{interest}</span>
+                  {isEditing && (
+                    <button onClick={() => removeInterest(interest)} className="hover:text-pink-dark">
+                      <LogOut size={10} className="rotate-45" /> {/* Close icon substitute */}
+                    </button>
+                  )}
+                </div>
+              ))}
+              {isEditing && (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={newInterest}
+                    onChange={(e) => setNewInterest(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addInterest()}
+                    placeholder="Add..."
+                    className="w-20 px-2 py-1 bg-slate-50 rounded-lg text-xs outline-none"
+                  />
+                  <button onClick={addInterest} className="text-pink-primary font-bold text-lg">+</button>
+                </div>
+              )}
+              {interests.length === 0 && !isEditing && (
+                <p className="text-xs text-slate-400">Add interests to find better matches</p>
+              )}
+            </div>
+          </div>
+        </div>
         <div className="space-y-3">
           <h3 className="ml-2 text-xs font-bold text-slate-400 uppercase tracking-widest">Account</h3>
           <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">

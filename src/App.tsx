@@ -11,6 +11,7 @@ import OnboardingPage from './pages/OnboardingPage';
 import ChatPage from './pages/ChatPage';
 import ActiveUsersPage from './pages/ActiveUsersPage';
 import FriendsPage from './pages/FriendsPage';
+import DMChatPage from './pages/DMChatPage';
 import ProfilePage from './pages/ProfilePage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
@@ -56,6 +57,7 @@ function AppRoutes() {
         <Route path="/chat" element={user ? <ChatPage /> : <Navigate to="/" />} />
         <Route path="/active" element={user ? <ActiveUsersPage /> : <Navigate to="/" />} />
         <Route path="/friends" element={user ? <FriendsPage /> : <Navigate to="/" />} />
+        <Route path="/dm/:friendId" element={user ? <DMChatPage /> : <Navigate to="/" />} />
         <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/" />} />
       </Route>
     </Routes>
