@@ -35,6 +35,72 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reset inactivity timer
+  const resetInactivityTimer = () => {
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    
+    if (partner && partner.isBot) {
+      inactivityTimerRef.current = setTimeout(() => {
+        handleInactivityTimeout();
+      }, 35000); // 35 seconds
+    }
+  };
+
+  useEffect(() => {
+    resetInactivityTimer();
+    return () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    };
+  }, [messages, partner]);
+
+  const handleInactivityTimeout = () => {
+    if (partner && partner.isBot) {
+      // Bot says something before leaving
+      const inactivityLines = [
+        "u there? gtg bye.",
+        "hello? anyway i'm out.",
+        "too slow lol. see ya.",
+        "i'm bored. catch ya later.",
+        "gtg, u not responding anyway.",
+        "bye bye! 👋"
+      ];
+      const botMsg = inactivityLines[Math.floor(Math.random() * inactivityLines.length)];
+      
+      const botMessage: Message = {
+        id: crypto.randomUUID(),
+        sender_id: partner.id,
+        content: botMsg,
+        created_at: Date.now()
+      };
+      
+      setMessages(prev => [...prev, botMessage]);
+      
+      setTimeout(() => {
+        setPartner(null);
+        findPartner();
+      }, 2500);
+    }
+  };
+
+  useEffect(() => {
+    // When keyboard shows, some browsers might need a little nudge to scroll
+    const handleFocus = () => {
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTo({
+            top: scrollRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 300);
+    };
+
+    window.addEventListener('focusin', handleFocus);
+    return () => window.removeEventListener('focusin', handleFocus);
+  }, []);
   
   useEffect(() => {
     const initChat = async () => {
@@ -55,6 +121,14 @@ export default function ChatPage() {
   const handleSendMessage = async () => {
     if (!inputText.trim() || !partner) return;
     
+    // Smooth scroll to bottom before sending to feel more responsive
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+
     const userMsg = inputText.toLowerCase();
     
     const badWords = ['fuck', 'shit', 'bitch', 'asshole', 'fuk', 'motherfucker'];
@@ -154,7 +228,8 @@ export default function ChatPage() {
     await supabase.from('users').update({ status: 'searching', current_partner_id: null }).eq('id', user.id);
     
     const startTime = Date.now();
-    const maxSearchTime = 8000 + Math.random() * 2000;
+    // Wait MUCH longer for real users (20 seconds) before falling back to bot
+    const maxSearchTime = 18000 + Math.random() * 5000; 
     
     const pollForPartner = async () => {
       try {
@@ -282,21 +357,24 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div 
+      ref={containerRef}
+      className="flex flex-col h-full bg-white relative overflow-hidden"
+    >
       <ChatHeader partner={partner} onEndChat={endChat} />
 
-      <div className="flex-1 overflow-hidden relative flex flex-col">
-        <Suspense fallback={<div className="flex-1 flex items-center justify-center">Loading...</div>}>
+      <div className="flex-1 flex flex-col min-h-0 bg-slate-50/20">
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center font-bold text-pink-300">Loading...</div>}>
           {!searching && !partner && (
             <ChatEmptyState onFindPartner={findPartner} />
           )}
-
+          
           {searching && (
             <ChatMatchmaking userGender={user?.gender} />
           )}
 
           {partner && (
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col min-h-0">
               <ChatMessages 
                 messages={messages} 
                 isTyping={isTyping} 
@@ -305,7 +383,10 @@ export default function ChatPage() {
               />
               <ChatInput 
                 inputText={inputText} 
-                setInputText={setInputText} 
+                setInputText={(val) => {
+                  setInputText(val);
+                  resetInactivityTimer();
+                }} 
                 onSendMessage={handleSendMessage} 
               />
             </div>
@@ -313,10 +394,12 @@ export default function ChatPage() {
         </Suspense>
       </div>
 
-      <div className="px-4 py-2 bg-amber-50 border-t border-amber-100 flex items-center gap-2 text-amber-600 text-[10px] font-bold">
-        <AlertCircle size={14} />
-        <span>REPORT ABUSE IF NEEDED • BE RESPECTFUL</span>
-      </div>
+      {!partner && (
+        <div className="shrink-0 px-4 py-2 bg-amber-50 border-t border-amber-100 flex items-center gap-2 text-amber-600 text-[10px] font-bold">
+          <AlertCircle size={14} />
+          <span>REPORT ABUSE IF NEEDED • BE RESPECTFUL</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,12 +4,12 @@ import { motion } from 'motion/react';
 
 export default function Layout() {
   return (
-    <div className="h-screen flex flex-col bg-slate-50 font-sans">
+    <div className="h-full flex flex-col bg-slate-50 font-sans">
       <main className="flex-1 overflow-hidden relative">
         <Outlet />
       </main>
 
-      <nav className="h-20 bg-white border-t border-pink-100 flex items-center justify-around px-2 shadow-[0_-2px_10px_rgba(255,77,141,0.05)] z-50">
+      <nav className="shrink-0 h-20 bg-white border-t border-pink-100 flex items-center justify-around px-2 shadow-[0_-2px_10px_rgba(255,77,141,0.05)] z-50 safe-area-inset-bottom">
         <NavLink
           to="/chat"
           className={({ isActive }) =>

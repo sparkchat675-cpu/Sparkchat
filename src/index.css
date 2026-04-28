@@ -15,9 +15,32 @@
 }
 
 @layer base {
+  html, body {
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  #root {
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    overscroll-behavior: none;
+    position: relative;
+  }
+
   body {
     @apply font-sans bg-bg-soft text-text-main selection:bg-pink-primary/20;
   }
+}
+
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 @utility pink-gradient {
@@ -31,18 +54,22 @@
 }
 
 .chat-bubble-user {
-  @apply pink-gradient text-white shadow-lg;
+  @apply pink-gradient text-white shadow-lg px-4 py-2.5;
   border-radius: 18px 18px 2px 18px;
   box-shadow: 0 4px 12px rgba(255, 77, 141, 0.2);
 }
 
 .chat-bubble-partner {
-  @apply bg-white text-text-main shadow-sm;
+  @apply bg-white text-text-main shadow-sm px-4 py-2.5;
   border-radius: 2px 18px 18px 18px;
   box-shadow: 0 4px 12px rgba(255, 77, 141, 0.08);
 }
 
 /* Custom scrollbar for chat */
+.custom-scrollbar {
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+}
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }

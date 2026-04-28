@@ -139,9 +139,9 @@ export default function DMChatPage() {
   if (!partner) return <div className="h-full flex items-center justify-center p-8">Partner not found.</div>;
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-white overflow-hidden relative">
       {/* Header */}
-      <header className="h-16 flex items-center px-4 border-b border-slate-100 gap-3">
+      <header className="shrink-0 h-16 flex items-center px-4 border-b border-slate-100 gap-3">
         <button onClick={() => navigate(-1)} className="p-2 text-slate-400 hover:text-pink-primary">
           <ChevronLeft size={24} />
         </button>
@@ -163,7 +163,7 @@ export default function DMChatPage() {
       </header>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-slate-50">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-slate-50 min-h-0">
         <div className="flex justify-center mb-8">
           <div className="px-4 py-2 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2">
             <Shield size={14} className="text-green-500" />
@@ -198,8 +198,8 @@ export default function DMChatPage() {
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-white border-t border-slate-100 flex items-center gap-3">
-        <button className="p-2 text-slate-400 hover:text-pink-primary transition-colors">
+      <div className="shrink-0 p-4 bg-white border-t border-slate-100 flex items-center gap-3">
+        <button className="p-2 text-slate-400 hover:text-pink-primary transition-colors shrink-0">
           <ImageIcon size={22} />
         </button>
         <div className="flex-1 relative">

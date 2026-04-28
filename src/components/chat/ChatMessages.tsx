@@ -17,14 +17,27 @@ interface ChatMessagesProps {
 }
 
 export const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping, userId, scrollRef }) => {
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const scrollContainer = scrollRef.current;
+    if (scrollContainer) {
+      const scrollHeight = scrollContainer.scrollHeight;
+      const height = scrollContainer.clientHeight;
+      const maxScrollTop = scrollHeight - height;
+      
+      // Use requestAnimationFrame to ensure DOM is updated
+      requestAnimationFrame(() => {
+        scrollContainer.scrollTo({
+          top: maxScrollTop + 100, // Small extra to be safe
+          behavior: messages.length <= 1 ? 'auto' : 'smooth'
+        });
+      });
     }
   }, [messages, isTyping, scrollRef]);
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar space-y-3">
       <div className="flex justify-center my-4">
         <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] uppercase font-bold tracking-widest rounded-full">
           Chat Started
@@ -38,8 +51,8 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping, 
             initial={{ opacity: 0, scale: 0.8, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             className={cn(
-              "flex",
-              msg.sender_id === userId ? "justify-end" : "justify-start"
+               "flex",
+               msg.sender_id === userId ? "justify-end" : "justify-start"
             )}
           >
             <div className={msg.sender_id === userId ? "chat-bubble-user" : "chat-bubble-partner"}>
@@ -62,6 +75,8 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping, 
           </div>
         </motion.div>
       )}
+      
+      <div ref={messagesEndRef} />
     </div>
   );
 };
