@@ -3,6 +3,9 @@ import { GoogleGenAI } from "@google/genai";
 // Use the specific key provided by the user
 const USER_API_KEY = "AIzaSyC7J0goUOxAq6jmhfm8I6orufTOEXMrhI8";
 
+// Standard way to access keys in this environment
+const GEMINI_API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+
 export async function generateBotResponse(
   userText: string, 
   userGender: string, 
@@ -10,10 +13,10 @@ export async function generateBotResponse(
   chatHistory: { role: 'user' | 'model', text: string }[]
 ) {
   try {
-    const apiKey = USER_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
+    const apiKey = USER_API_KEY || GEMINI_API_KEY;
     
     if (!apiKey) {
-      throw new Error("No Gemini API key available.");
+      throw new Error("No Gemini API key available. Please check your environment variables.");
     }
 
     const ai = new GoogleGenAI({ apiKey });
@@ -35,6 +38,7 @@ export async function generateBotResponse(
       7. IDENTITY: You are ${userGender === 'Male' ? 'Female' : 'Male'}. 
     `;
 
+    // Format chat history for @google/genai
     const contents = [
       ...chatHistory.filter(h => h.role === 'user' || h.role === 'model').map(h => ({
         role: h.role,
@@ -75,17 +79,24 @@ export async function generateBotResponse(
       },
     });
 
-    if (!response.text) {
+    const text = response.text;
+
+    if (!text) {
       console.error("Empty AI response:", response);
       return "Sorry, connection is a bit slow! Let's try again? 😊";
     }
 
-    return response.text;
+    return text;
   } catch (error: any) {
     console.error("Gemini API Error:", error);
     
-    if (error?.message?.includes("API key not valid")) {
-       return "Oops! My brain is a bit fuzzy (Invalid Key). Let's talk later? ❤️";
+    const msg = error?.message || "";
+    if (msg.includes("API key not valid") || msg.includes("API key not found")) {
+       return "Oops! My brain is a bit fuzzy (API Key error). Please check your configuration! ❤️";
+    }
+    
+    if (msg.includes("limit") || msg.includes("quota")) {
+      return "I'm a bit tired today (Quota exceeded). Let's talk later! ❤️";
     }
     
     return "Oops, something went wrong! Let's talk later? ❤️";

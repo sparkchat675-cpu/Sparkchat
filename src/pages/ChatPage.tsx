@@ -186,7 +186,7 @@ export default function ChatPage() {
         }));
         
         const rawBotText = await generateBotResponse(
-          inputText, 
+          newMessage.content, 
           user?.gender || 'Other', 
           user?.country || 'Other',
           chatHistory
@@ -228,41 +228,82 @@ export default function ChatPage() {
     await supabase.from('users').update({ status: 'searching', current_partner_id: null }).eq('id', user.id);
     
     const startTime = Date.now();
-    // Wait MUCH longer for real users (20 seconds) before falling back to bot
-    const maxSearchTime = 18000 + Math.random() * 5000; 
+    // Fast fallback: 9-11 seconds max waiting for real users
+    const maxSearchTime = 9000 + Math.random() * 2000; 
     
     const pollForPartner = async () => {
       try {
+        // 1. Check if WE have been picked by someone else first
+        const { data: me, error: meError } = await supabase
+          .from('users')
+          .select('current_partner_id, status')
+          .eq('id', user.id)
+          .single();
+
+        if (!meError && me && me.current_partner_id && me.status === 'chatting') {
+          // Someone else found us!
+          const { data: matchedUser, error: pError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', me.current_partner_id)
+            .single();
+
+          if (!pError && matchedUser) {
+            setPartner({
+              id: matchedUser.id,
+              name: matchedUser.name,
+              avatar_url: matchedUser.avatar_url,
+              gender: matchedUser.gender,
+              country: matchedUser.country,
+              isBot: false
+            });
+            setSearching(false);
+            return true;
+          }
+        }
+
+        // 2. Otherwise, look for others
         const targetGender = user.gender === 'Male' ? 'Female' : (user.gender === 'Female' ? 'Male' : 'Other');
         
         const { data: realUsers, error } = await supabase
           .from('users')
           .select('*')
-          .eq('gender', targetGender)
           .eq('status', 'searching')
+          .eq('gender', targetGender)
+          .eq('country', user.country)
           .neq('id', user.id)
+          .order('updated_at', { ascending: true })
           .limit(1);
 
         if (!error && realUsers && realUsers.length > 0) {
           const matchedUser = realUsers[0];
           
-          await Promise.all([
-            supabase.from('users').update({ status: 'chatting', current_partner_id: matchedUser.id }).eq('id', user.id),
-            supabase.from('users').update({ status: 'chatting', current_partner_id: user.id }).eq('id', matchedUser.id)
-          ]);
+          const { data: claimData, error: claimError } = await supabase
+            .from('users')
+            .update({ status: 'chatting', current_partner_id: user.id })
+            .eq('id', matchedUser.id)
+            .eq('status', 'searching')
+            .select();
 
-          setPartner({
-            id: matchedUser.id,
-            name: matchedUser.name,
-            avatar_url: matchedUser.avatar_url,
-            gender: matchedUser.gender,
-            country: matchedUser.country,
-            isBot: false
-          });
-          setSearching(false);
-          return true;
+          if (!claimError && claimData && claimData.length > 0) {
+            await supabase.from('users')
+              .update({ status: 'chatting', current_partner_id: matchedUser.id })
+              .eq('id', user.id);
+
+            setPartner({
+              id: matchedUser.id,
+              name: matchedUser.name,
+              avatar_url: matchedUser.avatar_url,
+              gender: matchedUser.gender,
+              country: matchedUser.country,
+              isBot: false
+            });
+            setSearching(false);
+            return true;
+          }
         }
         
+        // 3. Fallback to bot if time exceeded
         if (Date.now() - startTime > maxSearchTime) {
           setupRealisticPartner();
           await supabase.from('users').update({ status: 'chatting' }).eq('id', user.id);
@@ -284,7 +325,7 @@ export default function ChatPage() {
       const interval = setInterval(async () => {
         const isFinished = await pollForPartner();
         if (isFinished) clearInterval(interval);
-      }, 1500);
+      }, 1200);
     }
   };
 
