@@ -22,25 +22,19 @@ export default defineConfig(({mode}) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-                return 'vendor-react';
+              // Group Core React & Router
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom') || id.includes('scheduler')) {
+                return 'vendor-core';
               }
-              if (id.includes('firebase')) {
-                return 'vendor-firebase';
+              // Group Database & AI Services
+              if (id.includes('firebase') || id.includes('@supabase') || id.includes('@google/genai')) {
+                return 'vendor-services';
               }
-              if (id.includes('@google/genai')) {
-                return 'vendor-ai';
+              // Group UI & Animation
+              if (id.includes('motion') || id.includes('lucide-react') || id.includes('clsx') || id.includes('tailwind-merge')) {
+                return 'vendor-ui';
               }
-              if (id.includes('@supabase')) {
-                return 'vendor-supabase';
-              }
-              if (id.includes('motion')) {
-                return 'vendor-motion';
-              }
-              if (id.includes('lucide-react')) {
-                return 'vendor-icons';
-              }
-              return 'vendor-others';
+              // Let Vite handle other small dependencies naturally to avoid circular loops
             }
           },
         },
