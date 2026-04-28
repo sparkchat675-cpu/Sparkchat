@@ -26,9 +26,15 @@ export default defineConfig(({mode}) => {
               if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom') || id.includes('scheduler')) {
                 return 'vendor-core';
               }
-              // Group Database & AI Services
-              if (id.includes('firebase') || id.includes('@supabase') || id.includes('@google/genai')) {
-                return 'vendor-services';
+              // Split Database & AI Services into individual chunks
+              if (id.includes('firebase')) {
+                return 'vendor-firebase';
+              }
+              if (id.includes('@supabase')) {
+                return 'vendor-supabase';
+              }
+              if (id.includes('@google/genai')) {
+                return 'vendor-ai';
               }
               // Group UI & Animation
               if (id.includes('motion') || id.includes('lucide-react') || id.includes('clsx') || id.includes('tailwind-merge')) {
