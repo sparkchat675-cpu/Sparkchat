@@ -61,7 +61,7 @@ export default function ChatPage() {
     const hasBadWords = badWords.some(word => userMsg.includes(word));
     
     const newMessage: Message = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       sender_id: user?.id || 'me',
       content: inputText,
       created_at: Date.now()
@@ -86,7 +86,7 @@ export default function ChatPage() {
         const exitMsg = exitLines[Math.floor(Math.random() * exitLines.length)];
 
         const botMessage: Message = {
-          id: Date.now().toString() + '_bot',
+          id: crypto.randomUUID(),
           sender_id: partner.id,
           content: exitMsg,
           created_at: Date.now()
@@ -126,7 +126,7 @@ export default function ChatPage() {
         setTimeout(() => {
           setIsTyping(false);
           const botMessage: Message = {
-            id: Date.now().toString() + '_bot',
+            id: crypto.randomUUID(),
             sender_id: partner.id,
             content: botText,
             created_at: Date.now()
@@ -267,7 +267,7 @@ export default function ChatPage() {
     setTimeout(() => {
       setIsTyping(false);
       const botMessage: Message = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         sender_id: currentPartner.id,
         content: text,
         created_at: Date.now()

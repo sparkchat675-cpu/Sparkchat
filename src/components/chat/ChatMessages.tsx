@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 
@@ -17,6 +17,12 @@ interface ChatMessagesProps {
 }
 
 export const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, isTyping, userId, scrollRef }) => {
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isTyping, scrollRef]);
+
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
       <div className="flex justify-center my-4">
