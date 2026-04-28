@@ -16,16 +16,37 @@ export default defineConfig(({mode}) => {
       },
     },
     build: {
+      target: 'esnext',
+      minify: 'esbuild',
       rollupOptions: {
         output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-            'ui-vendor': ['motion', 'lucide-react', 'clsx', 'tailwind-merge'],
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+                return 'vendor-react';
+              }
+              if (id.includes('firebase')) {
+                return 'vendor-firebase';
+              }
+              if (id.includes('@google/genai')) {
+                return 'vendor-ai';
+              }
+              if (id.includes('@supabase')) {
+                return 'vendor-supabase';
+              }
+              if (id.includes('motion')) {
+                return 'vendor-motion';
+              }
+              if (id.includes('lucide-react')) {
+                return 'vendor-icons';
+              }
+              return 'vendor-others';
+            }
           },
         },
       },
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 600,
+      reportCompressedSize: false,
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
